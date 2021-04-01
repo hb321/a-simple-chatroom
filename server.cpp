@@ -10,6 +10,14 @@
 #include <pthread.h>
 #include <signal.h>
 
+/*
+高亮蓝色 \033[34;1m高亮蓝色文字\033[0m
+高亮绿色 \033[32;1m高亮绿色文字\033[0m
+高亮红色 \033[31;1m高亮红色文字\033[0m
+高亮黄色 \033[33;1m高亮黄色文字\033[0m 
+
+*/
+
 
 typedef struct sockaddr SockAddr;
 int fds[20];
@@ -19,12 +27,12 @@ int size = 20;
 
 void sigint(int signum){
 	char buf[1024] = {};
-	sprintf(buf, "\33[;45m%s \33[0m", "Server has closed!");
+	sprintf(buf, "\33[34;1mServer has closed!\33[0m");
 	for(int i=0; i<size; i++){
 		send(fds[i], buf, strlen(buf)+1, 0);
 		close(fds[i]);
 	}
-	puts("Server has closed!");
+	puts("\33[34;1mServer has closed!\33[0m");
 	exit(0);
 }
 
@@ -39,15 +47,16 @@ void* start(void* p){
 			break;
 		}
 	}
-	sprintf(buf3, "\33[;45m%s client_%d: %s\33[0m ", "Welcome", index+1, ip[index]);
+	sprintf(buf3, "\033[34;1mClient_%d has joined the chatroom.\033[0m", index+1);
 	for (int i=0; i<size; i++){
         if (fds[i]!=0 && fds[i]!=fd){
-           	printf("send to client_%d\n",fds[i]);
+//           	printf("send to client_%d\n",fds[i]);
            	send(fds[i], buf3, strlen(buf3)+1, 0);
         }
    	}
    	//向新来的客户端发消息表示成功进入聊天室
-	sprintf(buf4, "\33[;45m%s to our chatroom! You are client_%d: %s\33[0m ", "Welcome", index+1, ip[index]); 
+	sprintf(buf4, "\033[34;1mWelcome to our chatroom! You are client_%d.\033[0m", 
+		index+1); 
    	send(fds[index], buf4, strlen(buf4)+1, 0);
 	// 收发数据
 	while(1){
@@ -65,8 +74,7 @@ void* start(void* p){
                 }
             }
 			//提示用户退出
-			sprintf(buf2, "client_%d: %s \33[;31m%s\33[0m ", index+1, 
-				ip[index], "has left the chatroom!");
+			sprintf(buf2, "\33[34;1mClient_%d has left the chatroom!\33[0m", index+1);
 			puts(buf2);
 			int i;
 			for (i=0; i<size; i++){
@@ -75,16 +83,14 @@ void* start(void* p){
 			}
 			//send(fds[i], buf2, strlen(buf2)+1, 0);
 			//结束线程
-           	pthread_exit((void*)index); //此处尚有疑问 
+           	pthread_exit((void*)("Done")); //此处尚有疑问 
 		}
 
 		//向所有用户发送信息
-		printf("%s:%s\n", ip[index], buf1);	
-		sprintf(buf2, "\33[;42m%s\33[0m client_%d[%s]:%s", "recv",
-			index+1, ip[index], buf1);
+		printf("\33[34;1mClient_%d:\33[0m %s", index+1, buf1);
+		sprintf(buf2, "\33[34;1mClient_%d:\33[0m %s", index+1, buf1);
 		for (int i=0; i<size; i++){
         	if (fds[i]!=0 && fds[i]!=fd){
-//            	printf("send to client_%d\n", i+1);
             	send(fds[i], buf2, strlen(buf2)+1, 0);
         	}
     	}
@@ -117,13 +123,13 @@ int main(){
 
 	// 设置监听socket对象
 	listen(sockfd, size);
-	printf("Server starts!\n");
+	printf("\33[34;1mServer starts!\33[0m\n");
 	// 等待连接
 	while(1){
 		struct sockaddr_in from_addr;
 		int fd = accept(sockfd, (SockAddr*)&from_addr, &len);
 		if(0 > fd){
-			printf("Error while connecting to the client...\n");
+			printf("\33[31;1mError while connecting to the client...\33[0m\n");
 			continue;
 		}
 		int i;
@@ -136,14 +142,14 @@ int main(){
                 pthread_t pid;
 				pthread_create(&pid, NULL, start, &fd);
 				strcpy(ip[i], inet_ntoa(from_addr.sin_addr));
-				printf("Client %s is successfully connected!\n",ip[i]);
+				printf("\33[34;1mClient %s is successfully connected!\33[0m\n",ip[i]);
                 break;
 			}
         }
 
 		if (size == i){
             //发送给客户端说聊天室满了
-            char* str = "Sorry, the chatroom is full now!";
+            char* str = "\33[31;1mSorry, the chatroom is full now!\33[0m\n";
             send(fd, str, strlen(str), 0); 
             close(fd);
         }

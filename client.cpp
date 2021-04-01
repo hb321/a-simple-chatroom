@@ -16,7 +16,7 @@ void sigint(int signum)
 {
 	
 	close(sockfd);
-	puts("You have left the chatroom!");
+	puts("\033[34;1mYou have left the chatroom!\033[0m");
 	exit(0);
 }
 
@@ -26,7 +26,7 @@ void* start(void* p)
     while(1)
 	{
         char buf[1024] = {};
-        if (0 >= recv(fd,buf,sizeof(buf),0) )
+        if (0 >= recv(fd, buf, sizeof(buf), 0) )
 		{
             return NULL;
         }
@@ -60,16 +60,15 @@ int main()
 	}
 
 	pthread_t pid;
-    pthread_create(&pid,0,start,&sockfd);
+    pthread_create(&pid, 0, start, &sockfd);
 	//·¢ËÍÊý¾Ý
 	while(1)
 	{
 		char buf[1024] ={};
-		char srt[255]={};
-		//printf(">>>");
-		gets(srt);
-		sprintf(buf,"\33[;44m%s\33[0m",srt);
-		send(sockfd,buf,strlen(buf)+1,0);
+		char srt[1000]={};
+		fgets(srt, 800, stdin);
+		sprintf(buf, srt);
+		send(sockfd, buf, strlen(buf)+1, 0);
 	}
 
 }
