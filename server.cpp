@@ -29,7 +29,6 @@ void sigint(int signum){
 }
 
 void* start(void* p){
-	
 	//向所有聊天室成员 提示新用户来了
 	int fd =*(int*)p;
 	char buf3[1024] = {}, buf4[1024] = {};
