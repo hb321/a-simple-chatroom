@@ -76,7 +76,6 @@ void* start(void* p){
 			}
 			
 			//提示用户退出
-			//后面需要修改逻辑，用户退出登录不再提醒，退群才提醒
 			puts("\33[34;1mA client has left the chatroom!\33[0m");
 
 			sprintf(buf4, "2\33[34;1mYou have log out!\33[0m");
