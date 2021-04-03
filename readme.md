@@ -12,7 +12,8 @@
   | 属性名         | 数据类型           | 属性解释                                         |
   | -------------- | ------------------ | ------------------------------------------------ |
   | *user_dict*    | map<string, user>  | 用户名到用户信息的映射                           |
-  | *online_users* | vector< string>    | 在线用户的用户名                                 |
+  | *sock_fds*     | list< int>         | 当前服务器建立的所有连接的套接字文件描述符       |
+  | *fd_user_dict* | map<int, string>   | sock_fd到其所对应的用户名的映射                  |
   | *user_fd_dict* | map<string, int>   | 在线用户名到其所对应的sock_fd的映射              |
   | *group_dict*   | map<string, group> | 群名到群信息的映射                               |
   | *close_flag*   | bool               | 关闭服务端的意向标志，为true时说明服务端准备关闭 |
