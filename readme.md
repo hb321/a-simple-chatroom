@@ -22,25 +22,25 @@
 
 * 聊天群结构体(group)
 
-  | 属性名      | 数据类型        | 属性解释               |
-  | ----------- | --------------- | ---------------------- |
-  | *g_name*    | string          | 群名（唯一非空）       |
-  | *g_members* | vector< string> | 聊天室成员的用户名列表 |
-  | *g_owner*   | string          | 群主的用户名           |
+  | 属性名    | 数据类型      | 属性解释               |
+  | --------- | ------------- | ---------------------- |
+  | *name*    | string        | 群名（唯一非空）       |
+  | *members* | list< string> | 聊天室成员的用户名列表 |
+  | *owner*   | string        | 群主的用户名           |
 
-  群名`g_name`只能包括字母、数字或下划线，长度为$[1,max\_str\_len]$。
+  群名`name`只能包括字母、数字或下划线，长度为$[1,max\_str\_len]$。
 
 * 用户结构体(user)
 
-  | 属性名         | 数据类型        | 属性解释           |
-  | -------------- | --------------- | ------------------ |
-  | *u_name*       | string          | 用户名（唯一非空） |
-  | *key*          | string          | 用户口令           |
-  | *join_groups*  | vector< string> | 用户加入的群的列表 |
-  | *creat_groups* | vector< string> | 用户创建的群的列表 |
-  | *online*       | bool            | true时表示用户在线 |
+  | 属性名         | 数据类型      | 属性解释           |
+  | -------------- | ------------- | ------------------ |
+  | *name*         | string        | 用户名（唯一非空） |
+  | *key*          | string        | 用户口令           |
+  | *join_groups*  | list< string> | 用户加入的群的列表 |
+  | *creat_groups* | list< string> | 用户创建的群的列表 |
+  | *online*       | bool          | true时表示用户在线 |
 
-  用户名`g_name`和用户口令`key`只能包括字母、数字或下划线，用户名长度为$[1,max\_str\_len]$，用户口令`key`长度为$[min\_str\_len,max\_str\_len]$。
+  用户名`name`和用户口令`key`只能包括字母、数字或下划线，用户名长度为$[1,max\_str\_len]$，用户口令`key`长度为$[min\_str\_len,max\_str\_len]$。
 
 * 常量
 
