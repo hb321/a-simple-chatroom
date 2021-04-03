@@ -67,6 +67,37 @@
 
 
 
+##### 命令管理
+
+![](imgs/%E5%91%BD%E4%BB%A4%E7%AE%A1%E7%90%86.svg)
+
+- 输入正确命令时按命令执行操作；输入非法命令时提示命令非法，并且向用户展示正确的命令格式
+
+##### 命令格式
+
+客户端命令：
+
+| 命令格式           | 命令含义                                                   |
+| ------------------ | ---------------------------------------------------------- |
+| -h                 | help，print usage of commands                              |
+| -lg *u_name* *key* | user *u_name* logins with *key*                            |
+| -rg *u_name* *key* | user *u_name* registers with *key*                         |
+| -cg *g_name*       | create group *g_name*                                      |
+| -jg *g_name*       | join group *g_name*                                        |
+| -qg *g_name*       | quit group *g_name*                                        |
+| -sg *g_name* *msg* | send message *msg* to all online members in group *g_name* |
+| -su *u_name* *msg* | send message *msg* to user *u_name*                        |
+| -q                 | close the client                                           |
+
+服务端命令：
+
+| 命令格式 | 命令含义         |
+| -------- | ---------------- |
+| -q       | close the server |
+| -lsg     | list all groups  |
+
+
+
 ##### 用户管理
 
 ![](imgs/用户管理.svg)
@@ -90,35 +121,14 @@
 * 暂不设置加好友功能（默认所有在线用户都是好友）
 * 暂不设置离线消息功能（实现时只需要在服务端缓存离线消息，待客户端上线时再发送即可，由于该功能的添加不影响目前架构，简单起见先不设置）
 
-##### 命令管理
-
-![](imgs/命令管理.svg)
-
-* 输入正确命令时按命令执行操作；输入非法命令时提示命令非法，并且向用户展示正确的命令格式
-
-##### 命令格式
-
-客户端命令：
-
-| 命令格式           | 命令含义                                                   |
-| ------------------ | ---------------------------------------------------------- |
-| -h                 | help，print usage of commands                              |
-| -lg *u_name* *key* | user *u_name* logins with *key*                            |
-| -rg *u_name* *key* | user *u_name* registers with *key*                         |
-| -cg *g_name*       | create group *g_name*                                      |
-| -jg *g_name*       | join group *g_name*                                        |
-| -qg *g_name*       | quit group *g_name*                                        |
-| -sg *g_name* *msg* | send message *msg* to all online members in group *g_name* |
-| -su *u_name* *msg* | send message *msg* to user *u_name*                        |
-| -q                 | close the client                                           |
-
-服务端命令：
-
-| 命令格式 | 命令含义         |
-| -------- | ---------------- |
-| -q       | close the server |
-
 ### 更新记录
+
+#### 4/3
+
+* 更新架构设计图
+* 完成服务端管理的实现（暂不实现文件存储，即每次服务端重启状态都相同）
+* 完成客户端服务端连接管理
+* 
 
 #### 4/2 
 
