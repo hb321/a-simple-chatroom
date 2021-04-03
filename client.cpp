@@ -14,9 +14,8 @@ int sockfd;
 
 void sigint(int signum)
 {
-	
 	close(sockfd);
-	puts("\033[34;1mYou have left the chatroom!\033[0m");
+	puts("\033[34;1mYou have log out.\033[0m");
 	exit(0);
 }
 
@@ -30,17 +29,23 @@ void* start(void* p)
 		{
             return NULL;
         }
-        printf("\r%s\n",buf);
+        if (buf[0] == '0')
+        	printf("\r%s\n", buf+1);
+		else{
+			printf("\r%s\n", buf+1);
+			close(sockfd);
+			exit(0);
+		}
     }
 }
 
 int main()
 {
 	system("clear");
-	signal(SIGINT,sigint);
-	signal(SIGQUIT,sigint);
+	signal(SIGINT, sigint);
+	signal(SIGQUIT, sigint);
 	//创建socket对象
-	int sockfd = socket(AF_INET,SOCK_STREAM,0);
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(0>sockfd)
 	{
 		perror("socket");
@@ -53,8 +58,7 @@ int main()
 	addr.sin_addr.s_addr = inet_addr("172.18.167.136");//本地ip
 
 	//连接
-	if(0>connect(sockfd,(struct sockaddr*)&addr,sizeof(addr)))
-	{
+	if(0>connect(sockfd, (struct sockaddr*)&addr, sizeof(addr))){
 		perror("connect");
 		return -1;
 	}
@@ -62,8 +66,7 @@ int main()
 	pthread_t pid;
     pthread_create(&pid, 0, start, &sockfd);
 	//发送数据
-	while(1)
-	{
+	while(1){
 		char buf[1024] ={};
 		char srt[1000]={};
 		fgets(srt, 800, stdin);
