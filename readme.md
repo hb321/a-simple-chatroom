@@ -9,13 +9,13 @@
 
 * 服务器结构体(server)
 
-  | 属性名       | 数据类型           | 属性解释                                         |
-  | ------------ | ------------------ | ------------------------------------------------ |
-  | user_dict    | map<string, user>  | 用户名到用户信息的映射                           |
-  | online_users | vector< string>    | 在线用户的用户名                                 |
-  | user_fd_dict | map<string, int>   | 在线用户名到其所对应的sock_fd的映射              |
-  | group_dict   | map<string, group> | 群名到群信息的映射                               |
-  | close_flag   | bool               | 关闭服务端的意向标志，为true时说明服务端准备关闭 |
+  | 属性名         | 数据类型           | 属性解释                                         |
+  | -------------- | ------------------ | ------------------------------------------------ |
+  | *user_dict*    | map<string, user>  | 用户名到用户信息的映射                           |
+  | *online_users* | vector< string>    | 在线用户的用户名                                 |
+  | *user_fd_dict* | map<string, int>   | 在线用户名到其所对应的sock_fd的映射              |
+  | *group_dict*   | map<string, group> | 群名到群信息的映射                               |
+  | *close_flag*   | bool               | 关闭服务端的意向标志，为true时说明服务端准备关闭 |
 
   服务器关闭时需要存储的数据包括`user_dict`和`group_dict`，`online_users`和`user_fd_dict`默认值为空，`close_flag`默认值为**false**。（暂时先用群名和用户名作为各自的索引，后面再考虑给它们设置一个随机生成的整数id作为各自的索引。）
 
@@ -31,25 +31,26 @@
 
 * 用户结构体(user)
 
-  | 属性名       | 数据类型        | 属性解释           |
-  | ------------ | --------------- | ------------------ |
-  | u_name       | string          | 用户名（唯一非空） |
-  | key          | string          | 用户口令           |
-  | join_groups  | vector< string> | 用户加入的群的列表 |
-  | creat_groups | vector< string> | 用户创建的群的列表 |
+  | 属性名         | 数据类型        | 属性解释           |
+  | -------------- | --------------- | ------------------ |
+  | *u_name*       | string          | 用户名（唯一非空） |
+  | *key*          | string          | 用户口令           |
+  | *join_groups*  | vector< string> | 用户加入的群的列表 |
+  | *creat_groups* | vector< string> | 用户创建的群的列表 |
+  | *online*       | bool            | true时表示用户在线 |
 
   用户名`g_name`和用户口令`key`只能包括字母、数字或下划线，用户名长度为$[1,max\_str\_len]$，用户口令`key`长度为$[min\_str\_len,max\_str\_len]$。
 
 * 常量
 
-  | 属性名         | 数据类型 | 属性解释                                   |
-  | -------------- | -------- | ------------------------------------------ |
-  | max_con_num    | int      | 服务器同时连接的客户端的最大数量           |
-  | max_group_num  | int      | 同时存在的群的最大数量                     |
-  | max_join_g_num | int      | 用户同时加入的群的最大数量                 |
-  | max_crea_g_num | int      | 用户创建的群的最大数量（不包括已解散的群） |
-  | min_str_len    | int      | 结构体属性中的字符串（key）最小长度        |
-  | max_str_len    | int      | 结构体属性中的字符串（name/key）最大长度   |
+  | 属性名           | 数据类型 | 属性解释                                   |
+  | ---------------- | -------- | ------------------------------------------ |
+  | *max_con_num*    | int      | 服务器同时连接的客户端的最大数量           |
+  | *max_group_num*  | int      | 同时存在的群的最大数量                     |
+  | *max_join_g_num* | int      | 用户同时加入的群的最大数量                 |
+  | *max_crea_g_num* | int      | 用户创建的群的最大数量（不包括已解散的群） |
+  | *min_str_len*    | int      | 结构体属性中的字符串（key）最小长度        |
+  | *max_str_len*    | int      | 结构体属性中的字符串（name/key）最大长度   |
 
 #### 功能设计图
 
@@ -82,15 +83,38 @@
 
 ##### 用户聊天管理
 
+![](imgs/用户聊天管理.svg)
 
+* 暂不设置加好友功能（默认所有在线用户都是好友）
+* 暂不设置离线消息功能（实现时只需要在服务端缓存离线消息，待客户端上线时再发送即可，由于该功能的添加不影响目前架构，简单起见先不设置）
 
 ##### 命令管理
 
+![](imgs/命令管理.svg)
 
+* 输入正确命令时按命令执行操作；输入非法命令时提示命令非法，并且向用户展示正确的命令格式
 
 ##### 命令格式
 
+客户端命令：
 
+| 命令格式           | 命令含义                                                   |
+| ------------------ | ---------------------------------------------------------- |
+| -h                 | help，print usage of commands                              |
+| -lg *u_name* *key* | user *u_name* logins with *key*                            |
+| -rg *u_name* *key* | user *u_name* registers with *key*                         |
+| -cg *g_name*       | create group *g_name*                                      |
+| -jg *g_name*       | join group *g_name*                                        |
+| -qg *g_name*       | quit group *g_name*                                        |
+| -sg *g_name* *msg* | send message *msg* to all online members in group *g_name* |
+| -su *u_name* *msg* | send message *msg* to user *u_name*                        |
+| -q                 | close the client                                           |
+
+服务端命令：
+
+| 命令格式 | 命令含义         |
+| -------- | ---------------- |
+| -q       | close the server |
 
 ### 更新记录
 
