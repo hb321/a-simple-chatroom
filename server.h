@@ -19,19 +19,26 @@ struct Server{
     int max_crea_g_num;
     int min_str_len;
     int max_str_len;
+    int max_g_size;
     
     Server();
+    void loadData(); //从文件中加载数据 
     void saveData(); //将数据保存到文件中 
 //    void closeSocket(int sock_fd);
 //	void sigint(int signum);
 };
 Server::Server(){
+	loadData();
 	close_flag = false;
-	max_con_num = 2;
+	max_con_num = 3;
 	max_join_g_num = 50;
 	max_crea_g_num = 20;
 	min_str_len = 4;
 	max_str_len = 16;
+	max_g_size = 100;
+}
+void Server::loadData(){
+	//pass
 }
 void Server::saveData(){
 	//pass

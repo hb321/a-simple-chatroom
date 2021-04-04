@@ -78,6 +78,7 @@
 | -h                 | help，print usage of commands                              |
 | -lg *u_name* *key* | user *u_name* logins with *key*                            |
 | -rg *u_name* *key* | user *u_name* registers with *key*                         |
+| -lo                | user logout                                                |
 | -cg *g_name*       | create group *g_name*                                      |
 | -jg *g_name*       | join group *g_name*                                        |
 | -qg *g_name*       | quit group *g_name*                                        |
