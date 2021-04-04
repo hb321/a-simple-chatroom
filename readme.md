@@ -9,14 +9,20 @@
 
 * 服务器结构体(server)
 
-  | 属性名         | 数据类型           | 属性解释                                         |
-  | -------------- | ------------------ | ------------------------------------------------ |
-  | *user_dict*    | map<string, user>  | 用户名到用户信息的映射                           |
-  | *sock_fds*     | list< int>         | 当前服务器建立的所有连接的套接字文件描述符       |
-  | *fd_user_dict* | map<int, string>   | sock_fd到其所对应的用户名的映射                  |
-  | *user_fd_dict* | map<string, int>   | 在线用户名到其所对应的sock_fd的映射              |
-  | *group_dict*   | map<string, group> | 群名到群信息的映射                               |
-  | *close_flag*   | bool               | 关闭服务端的意向标志，为true时说明服务端准备关闭 |
+  | 属性名           | 数据类型           | 属性解释                                         |
+  | ---------------- | ------------------ | ------------------------------------------------ |
+  | *user_dict*      | map<string, user>  | 用户名到用户信息的映射                           |
+  | *sock_fds*       | list< int>         | 当前服务器建立的所有连接的套接字文件描述符       |
+  | *fd_user_dict*   | map<int, string>   | sock_fd到其所对应的用户名的映射                  |
+  | *user_fd_dict*   | map<string, int>   | 在线用户名到其所对应的sock_fd的映射              |
+  | *group_dict*     | map<string, group> | 群名到群信息的映射                               |
+  | *close_flag*     | bool               | 关闭服务端的意向标志，为true时说明服务端准备关闭 |
+  | *max_con_num*    | int                | 服务器同时连接的客户端的最大数量                 |
+  | *max_join_g_num* | int                | 用户同时加入的群的最大数量                       |
+  | *max_crea_g_num* | int                | 用户创建的群的最大数量（不包括已解散的群）       |
+  | *min_str_len*    | int                | 结构体属性中的字符串（key）最小长度              |
+  | *max_str_len*    | int                | 结构体属性中的字符串（name/key）最大长度         |
+  | *max_g_size*     | int                | 聊天群最大容量                                   |
 
   服务器关闭时需要存储的数据包括`user_dict`和`group_dict`，`online_users`和`user_fd_dict`默认值为空，`close_flag`默认值为**false**。（暂时先用群名和用户名作为各自的索引，后面再考虑给它们设置一个随机生成的整数id作为各自的索引。）
 
@@ -41,16 +47,6 @@
   | *online*       | bool          | true时表示用户在线 |
 
   用户名`name`和用户口令`key`只能包括字母、数字或下划线，用户名长度为$[1,max\_str\_len]$，用户口令`key`长度为$[min\_str\_len,max\_str\_len]$。
-
-* 常量
-
-  | 属性名           | 数据类型 | 属性解释                                   |
-  | ---------------- | -------- | ------------------------------------------ |
-  | *max_con_num*    | int      | 服务器同时连接的客户端的最大数量           |
-  | *max_join_g_num* | int      | 用户同时加入的群的最大数量                 |
-  | *max_crea_g_num* | int      | 用户创建的群的最大数量（不包括已解散的群） |
-  | *min_str_len*    | int      | 结构体属性中的字符串（key）最小长度        |
-  | *max_str_len*    | int      | 结构体属性中的字符串（name/key）最大长度   |
 
 #### 功能设计图
 
