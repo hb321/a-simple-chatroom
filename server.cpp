@@ -105,7 +105,7 @@ void clientClose(int fd){
 
 
 string helpCmds(){
-	string str("0");
+	string str("0\033[34;1m");
 	str += "-h                help, print usage of commands\n";
 	str += "-lg u_name key    user u_name logins with key\n";
 	str += "-rg u_name key    user u_name registers with key\n";
@@ -116,6 +116,7 @@ string helpCmds(){
 	str += "-sg g_name msg    send message msg to all online members in group g_name\n";
 	str += "-su u_name msg    send message msg to online user u_name\n";
 	str += "-q                close the client\n";
+	str += "\033[0m";
 	return str;
 }
 
@@ -237,11 +238,17 @@ bool userLogin(int fd, const string& u_name, const string& key){
 	}
 	if (s.user_dict.find(u_name) != s.user_dict.end()){
 		if (key == s.user_dict[u_name].key){
+			if (s.user_dict[u_name].online){//当前账号在异地登录，抢占 
+				int other_fd = s.user_fd_dict[u_name];
+				userLogout(other_fd);
+				err_msg = "0\033[31;1mYour account logins at another client!\033[0m";
+				send(other_fd, err_msg.c_str(), err_msg.size()+1, 0);
+			}
 			s.fd_user_dict[fd] = u_name;
 			s.user_fd_dict[u_name] = fd;
 			s.user_dict[u_name].online = true;
 			string msg = "0\033[34;1mYou("+u_name+") successfully Login!\033[0m";
-	    	send(fd, msg.c_str(), msg.size()+1, 0);
+		    send(fd, msg.c_str(), msg.size()+1, 0);
 			return true;
 		}
 		else	err_msg = "0\033[31;1mError password!\033[0m";
@@ -414,15 +421,15 @@ int parseCmd(int fd, const string& cmd, bool c_flag){
 	if (c_flag){
 		if (cmd.size() < 2)	invalidCmd(fd);
 		if (cmd[0] == '-'){
-		    if (cmd[1] == 'h' && cmd.size() == 2){
+		    if (cmd[1] == 'h' && cmd.size() == 2){//显示帮助信息 
 		        sprintf(buf, helpCmds().c_str());
 		        send(fd, buf, strlen(buf)+1, 0);
 		    }
-		    else if (cmd[1] == 'q' && cmd.size() == 2){
+		    else if (cmd[1] == 'q' && cmd.size() == 2){//关闭客户端 
 				clientClose(fd);
 				return 1;
 			}
-			else if (cmd[1] == 'l' && cmd[2]=='o' && cmd.size() == 3){
+			else if (cmd[1] == 'l' && cmd[2]=='o' && cmd.size() == 3){//退出登录 
 				userLogout(fd);
 			}
 		    else{
@@ -511,6 +518,19 @@ int parseCmd(int fd, const string& cmd, bool c_flag){
 	else{
 		if (cmd[0] == '-' && cmd[1] == 'q' && cmd.size()==2){
 			closeServer(s);
+		}
+		else if (cmd[0] == '-' && cmd[1] == 'l' && cmd[2] == 's' && 
+			cmd[3] == 'g' && cmd.size() == 4){
+			string msg;
+			map<string, Group>::iterator iter = s.group_dict.begin();
+			for (; iter != s.group_dict.end(); iter++){
+				msg += iter->first + "\t";
+			}	
+			if (msg.size() == 0){
+				msg = "NULL";
+			}
+			msg = "\033[34;1m"+msg+"\033[0m";
+			puts(msg.c_str());
 		}
 	}
 	return 2;
