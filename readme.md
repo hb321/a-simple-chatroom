@@ -166,7 +166,7 @@
 
 客户端C2：
 
-![](imgs/C2.png)
+![](imgs/C2_1.png)![](imgs/C2_2.png)
 
 客户端C3：
 
