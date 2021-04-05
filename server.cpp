@@ -20,9 +20,6 @@
 typedef struct sockaddr SockAddr;
 
 Server s;
-//int fds[20];
-//char ip[20][20];
-//int size = 20;
 
 void closeServer(Server& s){
 	s.close_flag = true;//服务端即将关闭
@@ -77,7 +74,7 @@ void userLogout(int fd){
 	}
 }
 
-//关闭客户端 
+//客户端关闭
 void clientClose(int fd){
 	char buf[1024]={};
 	//若当前sock_fd绑定了用户，则需要让该用户退登 
@@ -90,7 +87,7 @@ void clientClose(int fd){
 		sprintf(buf, "2\033[34;1mLogout.\033[0m");
 		send(fd, buf, strlen(buf)+1, 0);
 		//服务端显示用户退出登录 
-		sprintf(buf, "\33[34;1mA user(%s) logout.\33[0m", u_name.c_str());
+		sprintf(buf, "\33[34;1mUser \"%s\" logout.\33[0m", u_name.c_str());
 		puts(buf);
 	}
 	//关闭连接 
@@ -129,71 +126,6 @@ void invalidCmd(int fd){
 	send(fd, buf, strlen(buf)+1, 0);
 }
 
-bool parseName(string& name, string& err_msg){
-	//暂不实现具体错误对应的err_msg 
-	Trim(name);
-	if (name.size() <= s.max_str_len && name.size() >= 1){
-		for (int i = 0; i < name.size(); i++){
-			if (!(name[i] >= 'a' && name[i] <= 'z') &&
-				!(name[i] >= 'A' && name[i] <= 'Z') &&
-				!(name[i] >= '0' && name[i] <= '9') &&
-				name[i] != '_')	return false;
-		}
-		return true;
-	}
-	else	return false;
-}
-
-bool parseNameAndKey(const string& cmd, string& u_name, string& key, string& err_msg){
-	//暂不实现具体错误对应的err_msg
-	string cmd_cpy(cmd);
-	Trim(cmd_cpy);
-	int space_idx = cmd_cpy.find_first_of(string("\f\v\r\t\n "));
-	if (space_idx == -1)	return false;//找不到分隔符 
-	u_name = cmd_cpy.substr(0, space_idx);
-	key = cmd_cpy.substr(space_idx+1);
-	Trim(u_name);
-	Trim(key);
-	if (u_name.size() <= s.max_str_len && u_name.size() >= 1 && 
-		key.size() <= s.max_str_len && key.size() >= s.min_str_len){
-		for (int i = 0; i < u_name.size(); i++){
-			if (!(u_name[i] >= 'a' && u_name[i] <= 'z') &&
-				!(u_name[i] >= 'A' && u_name[i] <= 'Z') &&
-				!(u_name[i] >= '0' && u_name[i] <= '9') &&
-				u_name[i] != '_')	return false;
-		}
-		for (int i = 0; i < key.size(); i++){
-			if (!(key[i] >= 'a' && key[i] <= 'z') &&
-				!(key[i] >= 'A' && key[i] <= 'Z') &&
-				!(key[i] >= '0' && key[i] <= '9') &&
-				key[i] != '_')	return false;
-		}
-//		cout << "*" << u_name << "**" << key << "*" << endl; 
-		return true;
-	}
-	else	return false;
-}
-
-bool parseNameAndMsg(const string& cmd, string& name, string& msg, string& err_msg){
-	//暂不实现具体错误对应的err_msg
-	string cmd_cpy(cmd);
-	Trim(cmd_cpy);
-	int space_idx = cmd_cpy.find_first_of(string("\f\v\r\t\n "));
-	name = cmd_cpy.substr(0, space_idx);
-	msg = cmd_cpy.substr(space_idx+1);
-	Trim(name);
-	Trim(msg);//发消息不以空白字符开始或结束，也不能发空白消息 
-	if (name.size() <= s.max_str_len && name.size() >= 1){
-		for (int i = 0; i < name.size(); i++){
-			if (!(name[i] >= 'a' && name[i] <= 'z') &&
-				!(name[i] >= 'A' && name[i] <= 'Z') &&
-				!(name[i] >= '0' && name[i] <= '9') &&
-				name[i] != '_')	return false;
-		}
-		if (msg.size() > 0)	return true;
-	}
-	else	return false;
-}
 
 bool listSearch(list<string>& l, const string& ele){
 	list<string>::iterator iter = l.begin();
@@ -438,112 +370,67 @@ bool sendUserMsg(int fd, const string& d_name, const string& msg){
 	return false;
 }
 
-int parseCmd(int fd, const string& cmd, bool c_flag){
+//返回值为1表示客户端关闭，返回值0表示命令处理成功，返回值2表示命令有误，处理完毕 
+int parseCmdMsg(int fd, const string& cmd_msg, bool c_flag){
 	//c_flag为true表示命令来自客户端，否则来自服务端 
 	char buf[1024]={};
 	if (c_flag){
-		if (cmd.size() < 2)	invalidCmd(fd);
-		if (cmd[0] == '-'){
-		    if (cmd[1] == 'h' && cmd.size() == 2){//显示帮助信息 
-		        sprintf(buf, helpCmds().c_str());
-		        send(fd, buf, strlen(buf)+1, 0);
-		    }
-		    else if (cmd[1] == 'q' && cmd.size() == 2){//关闭客户端 
+		string content = string(cmd_msg.substr(2));
+		if (cmd_msg[0] == '1'){
+			if (content == string("q")){//客户端关闭 
 				clientClose(fd);
 				return 1;
 			}
-			else if (cmd[1] == 'l' && cmd[2]=='o' && cmd.size() == 3){//退出登录 
+			else if (content == string("lo")){
 				userLogout(fd);
+				return 0; 
 			}
-		    else{
-		    	if (cmd.size() > 4){
-					if (cmd[1]=='r'&&cmd[2]=='g'){//注册账号 
-						string u_name, key, err_msg;
-						bool ret = parseNameAndKey(cmd.substr(3), u_name, key, err_msg);
-						if (ret){
-							if (userRegister(fd, u_name, key))	return 0;
-						}
-						else{
-							err_msg = "0\033[31;1mInvalid user name or key!\033[0m";
-		    				send(fd, err_msg.c_str(), err_msg.size()+1, 0);
-						}
-					}
-					else if (cmd[1]=='l'&&cmd[2]=='g'){//登录账号 
-						string u_name, key, err_msg;
-						bool ret = parseNameAndKey(cmd.substr(3), u_name, key, err_msg);
-						if (ret){
-							if (userLogin(fd, u_name, key))	return 0;
-						}
-						else{
-							err_msg = "0\033[31;1mInvalid user name or key!\033[0m";
-		    				send(fd, err_msg.c_str(), err_msg.size()+1, 0);
-						}
-					}
-					else if (cmd[1]=='c'&&cmd[2]=='g'){//建群 
-		    			string g_name(cmd.substr(3)), err_msg;
-		    			bool ret = parseName(g_name, err_msg);
-		    			if (ret){
-		    				if (createGroup(fd, g_name))	return 0;
-						}	
-		    			else{
-		    				err_msg = "0\033[31;1mInvalid name!\033[0m";
-		    				send(fd, err_msg.c_str(), err_msg.size()+1, 0);
-						}
-					}
-					else if (cmd[1]=='j'&&cmd[2]=='g'){//加群 
-						string g_name(cmd.substr(3)), err_msg;
-		    			bool ret = parseName(g_name, err_msg);
-		    			if (ret){
-		    				if (joinGroup(fd, g_name))	return 0;
-						}
-		    			else{
-		    				err_msg = "0\033[31;1mInvalid name!\033[0m";
-		    				send(fd, err_msg.c_str(), err_msg.size()+1, 0);
-						}
-					}
-					else if (cmd[1]=='q'&&cmd[2]=='g'){//退群 
-						string g_name(cmd.substr(3)), err_msg;
-		    			bool ret = parseName(g_name, err_msg);
-		    			if (ret){
-		    				if (quitGroup(fd, g_name))	return 0;
-						}
-		    			else{
-		    				err_msg = "0\033[31;1mInvalid name!\033[0m";
-		    				send(fd, err_msg.c_str(), err_msg.size()+1, 0);
-						}
-					}
-					else if (cmd[1]=='s'&&cmd[2]=='g'){//发群消息 
-		    			string g_name, msg, err_msg;
-						bool ret = parseNameAndMsg(cmd.substr(3), g_name, msg, err_msg);
-						if (ret){
-							if (sendGroupMsg(fd, g_name, msg))	return 0;
-						}
-						else	invalidCmd(fd);
-					}
-					else if (cmd[1]=='s'&&cmd[2]=='u'){//私聊消息 
-						string u_name, msg, err_msg;
-						bool ret = parseNameAndMsg(cmd.substr(3), u_name, msg, err_msg);
-						if (ret){
-							if (sendUserMsg(fd, u_name, msg))	return 0;
-						}
-						else	invalidCmd(fd);
-					}
-					else{
-						//其他命令识别区，暂不实现，视为非法 
-						 invalidCmd(fd);
-					}
-				}
-				else	invalidCmd(fd);
-			} 
+			else	invalidCmd(fd);
+		}
+		else if (cmd_msg[0] == '2'){
+			int space_idx = content.find_first_of(' ');
+			string cmd = content.substr(0, space_idx);
+			string name = content.substr(space_idx+1);
+			if (cmd == string("cg")){
+				if (createGroup(fd, name))	return 0;
+			}
+			else if (cmd == string("jg")){
+				if (joinGroup(fd, name))	return 0;
+			}
+			else if (cmd == string("qg")){
+				if (quitGroup(fd, name))	return 0;
+			}
+			else	invalidCmd(fd);
+		}
+		else if (cmd_msg[0] == '3'){
+			int space_idx1 = content.find_first_of(' ');
+			string cmd = string(content.substr(0, space_idx1));
+			
+			content = content.substr(space_idx1+1);
+			int space_idx2 = content.find_first_of(' ');
+			string text1 = content.substr(0, space_idx2);;
+			string text2 = content.substr(space_idx2+1);
+			if (cmd == string("rg")){//注册账号 
+				if (userRegister(fd, text1, text2))	return 0;
+			}
+			else if (cmd == string("lg")){//登录账号 
+				if (userLogin(fd, text1, text2))	return 0;
+			}
+			else if (cmd == string("sg")){//发群消息 
+				if (sendGroupMsg(fd, text1, text2))	return 0;
+			}
+			else if (cmd == string("su")){//私聊消息 
+				if (sendUserMsg(fd, text1, text2))	return 0;
+			}
+			else	invalidCmd(fd);
 		}
 		else	invalidCmd(fd);
 	}
 	else{
-		if (cmd[0] == '-' && cmd[1] == 'q' && cmd.size()==2){
+		if (cmd_msg == string("-q")){
 			closeServer(s);
 		}
-		else if (cmd[0] == '-' && cmd[1] == 'l' && cmd[2] == 's' && 
-			cmd[3] == 'g' && cmd.size() == 4){
+		else if (cmd_msg == string("-lsg")){
 			string msg;
 			map<string, Group>::iterator iter = s.group_dict.begin();
 			for (; iter != s.group_dict.end(); iter++){
@@ -558,8 +445,6 @@ int parseCmd(int fd, const string& cmd, bool c_flag){
 	}
 	return 2;
 }
-
-
 
 void* start(void* p){
 	int fd =*(int*)p;
@@ -584,11 +469,10 @@ void* start(void* p){
 
 		//处理用户发来的命令行 
 		string cmd(buf3);
-		Trim(cmd);
-		int ret = parseCmd(fd, cmd, true);
+//		Trim(cmd);
+		int ret = parseCmdMsg(fd, cmd, true);
 		if (ret == 1)	pthread_exit((void*)("Done"));	//用户退出系统，退出线程 
 	}	
-
 }
 
 void* start_server(void* p)
@@ -602,7 +486,7 @@ void* start_server(void* p)
 		sprintf(buf, srt);
 		string cmd(buf);
 		Trim(cmd);
-		parseCmd(fd, cmd, false);//这里的fd实际上是用不到的
+		parseCmdMsg(fd, cmd, false);//这里的fd实际上是用不到的，返回值也是无效的 
     }
 }
 
