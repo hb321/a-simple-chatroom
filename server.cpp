@@ -67,7 +67,7 @@ void userLogout(int fd){
 		sprintf(buf, "0\033[34;1mLogout successfully.\033[0m");
 		send(fd, buf, strlen(buf)+1, 0);
 		//服务端显示用户退出登录 
-		sprintf(buf, "\33[34;1mA user(%s) logout.\33[0m", u_name.c_str());
+		sprintf(buf, "\33[34;1mUser \"%s\" logout.\33[0m", u_name.c_str());
 		puts(buf);
 	}
 	else{
@@ -299,6 +299,18 @@ bool joinGroup(int fd, const string& g_name){
 						
 						msg = "0\033[34;1mYou have joined group "+g_name+" successfully!\033[0m";
 			    		send(fd, msg.c_str(), msg.size()+1, 0);
+			    		
+			    		//通知其他在线群成员 
+			    		list<string>::iterator iter = s.group_dict[g_name].members.begin();
+	                    for (; iter != s.group_dict[g_name].members.end(); iter++){
+	                    	if (*iter == u_name)	continue;
+	                    	if (s.user_dict[*iter].online){//给在线用户发通知 
+	                    		int u_fd = s.user_fd_dict[*iter];
+	                    		msg = "0\033[34;1mFrom group \""+g_name+"\": User \""+
+									u_name+"\" join group\033[0m";
+	                    		send(u_fd, msg.c_str(), msg.size()+1, 0);
+							}
+						}
 			    		return true;
 					}
 					else	err_msg = "0\033[31;1mThe group is full!\033[0m";
@@ -340,17 +352,28 @@ bool quitGroup(int fd, const string& g_name){
                     return true;
                 }
                 else{
+                	list<string>::iterator iter = s.group_dict[g_name].members.begin();
+                    for (; iter != s.group_dict[g_name].members.end(); iter++){
+                    	if (*iter == u_name)	continue;
+                    	if (s.user_dict[*iter].online){//给在线用户发通知 
+                    		int u_fd = s.user_fd_dict[*iter];
+                    		msg = "0\033[34;1mFrom group \""+g_name+"\": User \""+
+								u_name+"\" left group\033[0m";
+                    		send(u_fd, msg.c_str(), msg.size()+1, 0);
+						}
+					}
+                	
                 	s.group_dict[g_name].members.remove(u_name);
                     s.user_dict[u_name].join_groups.remove(g_name);//普通用户退群 
                     
-                    msg = "0\033[34;1mYou left group "+g_name+" successfully!\033[0m";
+                    msg = "0\033[34;1mYou left group \""+g_name+"\" successfully!\033[0m";
                     send(fd, msg.c_str(), msg.size()+1, 0);
                     return true;
 				}
             }
             else    err_msg = "0\033[31;1mYou are not in the group!\033[0m";
         }
-        else    err_msg = "0\033[31;1mThe group "+g_name+" doesn't exist!\033[0m";
+        else    err_msg = "0\033[31;1mThe group \""+g_name+"\" doesn't exist!\033[0m";
 	}
 	else	err_msg = "0\033[31;1mPlease login first!\033[0m";
 	
@@ -371,7 +394,7 @@ bool sendGroupMsg(int fd, const string& g_name, const string& msg){
                    	if (s.user_dict[*iter].online){//给在线用户发消息 
                    		int u_fd = s.user_fd_dict[*iter];
                    		string g_msg;
-						g_msg += "0\033[34;1mFrom "+*iter+"(in "+g_name+"):\033[0m";
+						g_msg += "0\033[34;1mFrom \""+*iter+"\"(in group \""+g_name+"\"):\033[0m";
 						g_msg += msg;
                    		send(u_fd, g_msg.c_str(), g_msg.size()+1, 0);
 					}
@@ -381,7 +404,7 @@ bool sendGroupMsg(int fd, const string& g_name, const string& msg){
             }
             else    err_msg = "0\033[31;1mYou are not in the group!\033[0m";
         }
-        else    err_msg = "0\033[31;1mThe group "+g_name+" doesn't exist!\033[0m";
+        else    err_msg = "0\033[31;1mThe group \""+g_name+"\" doesn't exist!\033[0m";
 	}
 	else	err_msg = "0\033[31;1mPlease login first!\033[0m";
 	
@@ -398,7 +421,7 @@ bool sendUserMsg(int fd, const string& d_name, const string& msg){
 				if (s.user_dict[d_name].online){//若对方用户在线，向其发消息 
 					int u_fd = s.user_fd_dict[d_name];
                    	string u_msg;
-					u_msg += "0\033[34;1mFrom "+s_name+":\033[0m";
+					u_msg += "0\033[34;1mFrom \""+s_name+"\":\033[0m";
 					u_msg += msg;
                    	send(u_fd, u_msg.c_str(), u_msg.size()+1, 0);
 				}
@@ -407,7 +430,7 @@ bool sendUserMsg(int fd, const string& d_name, const string& msg){
 			}
 			else	err_msg = "0\033[31;1mCannot send message to yourself!\033[0m";
 		}
-		else	err_msg = "0\033[31;1mUser "+d_name+" doesn't exist'!\033[0m";
+		else	err_msg = "0\033[31;1mUser \""+d_name+"\" doesn't exist'!\033[0m";
 	}
 	else	err_msg = "0\033[31;1mPlease login first!\033[0m";
 	
@@ -542,15 +565,7 @@ void* start(void* p){
 	int fd =*(int*)p;
 	char buf1[1024] = {}, buf2[1024] = {};
 
-//	sprintf(buf1, "0\033[34;1mA new client has joined the chatroom.\033[0m");
-//	list<int>::iterator iter;
-//	for (iter = s.sock_fds.begin(); iter != s.sock_fds.end(); iter++){
-//		if (*iter != fd){
-//			send(*iter, buf1, strlen(buf1)+1, 0);
-//		}
-//	}
-
-   	//向新来的客户端发消息表示成功进入聊天室
+   	//向新来的客户端发消息表示成功连接服务端 
 	sprintf(buf2, "0\033[34;1mSuccessfully connect to the server.\033[0m"); 
    	send(fd, buf2, strlen(buf2)+1, 0);
    	
@@ -592,6 +607,7 @@ void* start_server(void* p)
 }
 
 int main(){
+	system("clear");
 	signal(SIGINT, sigint);
 	signal(SIGQUIT, sigint);
 	// 创建socket对象

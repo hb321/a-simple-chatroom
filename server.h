@@ -30,7 +30,7 @@ struct Server{
 Server::Server(){
 	loadData();
 	close_flag = false;
-	max_con_num = 3;
+	max_con_num = 5;
 	max_join_g_num = 50;
 	max_crea_g_num = 20;
 	min_str_len = 4;
