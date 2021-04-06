@@ -176,6 +176,21 @@
 
 ![](imgs/C4.png)
 
+#### 性能测试
+
+以下为目前的一个小测试
+
+```sh
+//执行代码
+g++  server.cpp -o server -lpthread  -lprofiler
+./server #同时运行2-3个客户端
+pprof server result.prof --text #输出文本的统计结果
+```
+
+运行代码后的统计结果
+
+![](imgs/test1.png)
+
 ### 更新记录
 
 #### 4/6
