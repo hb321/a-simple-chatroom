@@ -9,7 +9,11 @@
 #include<arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+//#include <gperftools/profiler.h>
 #include<iostream>
+#include <fstream>
+#include<vector>
+#include <time.h> 
 
 using namespace std;
 
@@ -23,6 +27,30 @@ int min_str_len = 4;
 int max_str_len = 16;
 int max_g_size = 100;
 
+int input_seed = 0;
+
+vector<string> readCmds(const string& filename){
+	ifstream fin(filename.c_str());
+	vector<string> cmds;
+	char sentence[500]; //定义文件读写的变量
+	if(fin.good()){
+		while(!fin.eof()){
+			fin.getline(sentence, 500); //读取文件,128个字节
+			cmds.push_back(string(sentence));
+		}
+	}
+	else	cout<<"error!"<<endl; //没有打开文件则出错
+	fin.close();
+	return cmds;
+}
+
+string getInput(const vector<string>& cmds){
+	srand((unsigned)time(NULL)+input_seed);
+	int idx = rand()%cmds.size();
+	input_seed++;
+	sleep(1);
+	return cmds[idx];
+}
 
 void sigint(int signum)
 {
@@ -127,12 +155,8 @@ bool parseNameAndMsg(const string& cmd, string& name, string& msg){
 int parseCmd(const string& cmd, string& cmd_msg, string& err_msg){
 	cmd_msg = "";
 	err_msg = "";
-//	puts(cmd.c_str());
-//	cout << cmd.size() << endl;
     if (cmd.size() >= 2 && cmd[0] == '-'){
     	//显示帮助信息
-//    	cout << (cmd[1] == 'h') << " " << (cmd.size() == 2) << endl;
-//    	cout << (cmd[1] == 'q') << " " << (cmd.size() == 2) << endl;
         if (cmd[1] == 'h' && cmd.size() == 2){
         	puts(helpCmds().c_str()+1);
         	return 0;
@@ -200,6 +224,7 @@ int parseCmd(const string& cmd, string& cmd_msg, string& err_msg){
 void* start(void* p)
 {
 	int fd =*(int*)p;
+	
     while(1)
 	{
         char buf[1024] = {};
@@ -222,6 +247,8 @@ int main()
 	system("clear");
 	signal(SIGINT, sigint);
 	signal(SIGQUIT, sigint);
+	
+	
 	//创建socket对象
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(0>sockfd)
@@ -243,23 +270,36 @@ int main()
 
 	pthread_t pid;
     pthread_create(&pid, 0, start, &sockfd);
+    
+    vector<string> cmds = readCmds(string("cmds.txt"));
+    
 	//发送数据
 	while(1){
+//		if (input_seed > 600){
+//			send(sockfd, "1 q", 4, 0);
+//			close(sockfd);
+//			puts("\033[34;1mYou have log out.\033[0m");
+//			exit(0);
+//		}
+		
 		char buf[1024] ={};
 		char srt[1000]={};
-		fgets(srt, 800, stdin);
-		sprintf(buf, srt);
-		string cmd(buf), cmd_msg, err_msg;
-		Trim(cmd);
+//		fgets(srt, 800, stdin);
+//		sprintf(buf, srt);
+//		string cmd(buf), cmd_msg, err_msg;
+//		Trim(cmd);
+		string cmd, cmd_msg, err_msg;
+		cmd = getInput(cmds);
 		int ret = parseCmd(cmd, cmd_msg, err_msg);
-		if (ret == 1)	send(sockfd, cmd_msg.c_str(), cmd_msg.size()+1, 0);
-		else if (ret == -1)	invalidCmd(err_msg);
-		else if (ret == 2){//向服务端发送消息后退出客户端 
+		if (input_seed > 600 || ret == 2){//向服务端发送消息后退出客户端 
+			cmd_msg = "1 q";
 			send(sockfd, cmd_msg.c_str(), cmd_msg.size()+1, 0);
 			close(sockfd);
 			puts("\033[34;1mYou have log out.\033[0m");
 			exit(0);
 		}
+		else if (ret == -1)	invalidCmd(err_msg);
+		else if (ret == 1)	send(sockfd, cmd_msg.c_str(), cmd_msg.size()+1, 0);
 	}
 
 }

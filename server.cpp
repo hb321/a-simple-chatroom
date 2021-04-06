@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
+#include <gperftools/profiler.h>
 #include"server.h"
 /*
 高亮蓝色 \033[34;1m高亮蓝色文字\033[0m
@@ -20,6 +21,7 @@
 typedef struct sockaddr SockAddr;
 
 Server s;
+int isStart = 0;
 
 void closeServer(Server& s){
 	s.close_flag = true;//服务端即将关闭
@@ -442,6 +444,12 @@ int parseCmdMsg(int fd, const string& cmd_msg, bool c_flag){
 			msg = "\033[34;1m"+msg+"\033[0m";
 			puts(msg.c_str());
 		}
+		else if (cmd_msg == string("start")){
+			isStart = 1;
+		}
+		else if (cmd_msg == string("end")){
+			isStart = 2;
+		}
 	}
 	return 2;
 }
@@ -449,27 +457,21 @@ int parseCmdMsg(int fd, const string& cmd_msg, bool c_flag){
 void* start(void* p){
 	int fd =*(int*)p;
 	char buf1[1024] = {}, buf2[1024] = {};
-
    	//向新来的客户端发消息表示成功连接服务端 
 	sprintf(buf2, "0\033[34;1mSuccessfully connect to the server.\033[0m"); 
    	send(fd, buf2, strlen(buf2)+1, 0);
-   	
 	// 收发数据
 	while(1){
 		char buf3[1024] = {};
 		char buf4[1024] = {};
-
 		//接受信息小于等于零或者服务端准备关闭，则用户退出
  		if (0 >= recv(fd, buf3, sizeof(buf3), 0) || s.close_flag){
- 			
  			clientClose(fd); //用户退出登录 
 			//结束线程
            	pthread_exit((void*)("Done")); //此处尚有疑问 
 		}
-
 		//处理用户发来的命令行 
 		string cmd(buf3);
-//		Trim(cmd);
 		int ret = parseCmdMsg(fd, cmd, true);
 		if (ret == 1)	pthread_exit((void*)("Done"));	//用户退出系统，退出线程 
 	}	
@@ -480,13 +482,23 @@ void* start_server(void* p)
 	int fd =*(int*)p;
     while(1)
 	{
-        //处理服务端的命令 
-		char buf[1024] ={}, srt[1024]={};
-		fgets(srt, 1000, stdin);
-		sprintf(buf, srt);
-		string cmd(buf);
-		Trim(cmd);
-		parseCmdMsg(fd, cmd, false);//这里的fd实际上是用不到的，返回值也是无效的 
+		if (isStart==1){
+			ProfilerStart("result.prof");
+			isStart = 0;
+		}
+		else if (isStart == 2){
+			ProfilerStop();
+			isStart = 0;
+		}
+		else{
+			//处理服务端的命令 
+			char buf[1024] ={}, srt[1024]={};
+			fgets(srt, 1000, stdin);
+			sprintf(buf, srt);
+			string cmd(buf);
+			Trim(cmd);
+			parseCmdMsg(fd, cmd, false);//这里的fd实际上是用不到的，返回值也是无效的
+		}
     }
 }
 
