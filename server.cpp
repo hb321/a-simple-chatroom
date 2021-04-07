@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <gperftools/profiler.h>
+#include <time.h>
+#include <sys/select.h>
 #include"server.h"
 /*
 高亮蓝色 \033[34;1m高亮蓝色文字\033[0m
@@ -17,11 +19,12 @@
 高亮红色 \033[31;1m高亮红色文字\033[0m
 高亮黄色 \033[33;1m高亮黄色文字\033[0m 
 */
-
+#define SIDIN 0//一般 ：标准输入的文件描述符为0
 typedef struct sockaddr SockAddr;
 
 Server s;
 int isStart = 0;
+bool t_flag = false;
 
 void closeServer(Server& s){
 	s.close_flag = true;//服务端即将关闭
@@ -181,8 +184,11 @@ bool userLogin(int fd, const string& u_name, const string& key){
 			s.fd_user_dict[fd] = u_name;
 			s.user_fd_dict[u_name] = fd;
 			s.user_dict[u_name].online = true;
-			string msg = "0\033[34;1mYou("+u_name+") successfully Login!\033[0m";
+			string msg = "0\033[34;1mYou("+u_name+") successfully login!\033[0m";
 		    send(fd, msg.c_str(), msg.size()+1, 0);
+		    //服务端显示用户登录 
+		    msg = "\33[34;1mUser \""+u_name+"\" login.\33[0m";
+			cout << msg << endl;
 			return true;
 		}
 		else	err_msg = "0\033[31;1mError password!\033[0m";
@@ -450,6 +456,9 @@ int parseCmdMsg(int fd, const string& cmd_msg, bool c_flag){
 		else if (cmd_msg == string("end")){
 			isStart = 2;
 		}
+		else if (cmd_msg == string("time")){
+			t_flag = true;
+		}
 	}
 	return 2;
 }
@@ -479,25 +488,45 @@ void* start(void* p){
 
 void* start_server(void* p)
 {
-	int fd =*(int*)p;
+    fd_set fdset;//fd_set结构体 变量（里面有1024位）
+	int fd =*(int*)p, stdin_fd=SIDIN;
+	float t1, t2, t3, t4, t5, t6;
+	float s1=0, s2=0, s3=0, s4=0, s5=0;
     while(1)
 	{
-		if (isStart==1){
-			ProfilerStart("result.prof");
-			isStart = 0;
+		//处理服务端的命令 
+		t1 = clock();
+		char buf[1024] ={}, srt[1024]={};
+		t2 = clock();
+
+		fgets(srt, 1000, stdin);
+		t3 = clock();
+		sprintf(buf, srt);
+		t4 = clock();
+		string cmd(buf);
+		Trim(cmd);
+		t5 = clock();
+		parseCmdMsg(fd, cmd, false);//这里的fd实际上是用不到的，返回值也是无效的
+		t6 = clock();
+		s1 += t2-t1;
+		s2 += t3-t2;
+		s3 += t4-t3;
+		s4 += t5-t4;
+		s5 += t6-t5;
+		if (t_flag){
+			cout << s1 << "ms\t" << s2 << "ms\t" << s3 << "ms\t";
+			cout << s4 << "ms\t" << s5 << "ms\n";
+			t_flag = false;
 		}
-		else if (isStart == 2){
+		if (isStart == 2){
 			ProfilerStop();
+			cout << "ProfilerStop!" << endl;
 			isStart = 0;
 		}
-		else{
-			//处理服务端的命令 
-			char buf[1024] ={}, srt[1024]={};
-			fgets(srt, 1000, stdin);
-			sprintf(buf, srt);
-			string cmd(buf);
-			Trim(cmd);
-			parseCmdMsg(fd, cmd, false);//这里的fd实际上是用不到的，返回值也是无效的
+		if (isStart == 1){
+			ProfilerStart("result.prof");
+			cout << "ProfilerStart!" << endl;
+			isStart = 0;
 		}
     }
 }
@@ -529,6 +558,9 @@ int main(){
 	listen(sockfd, s.max_con_num);
 	printf("\33[34;1mServer starts!\33[0m\n");
 	
+	ProfilerStart("result.prof");
+	cout << "ProfilerStart!" << endl;
+	
 	pthread_t pid;
     pthread_create(&pid, 0, start_server, &sockfd);
     
@@ -559,5 +591,10 @@ int main(){
 			}    
 		}
 		
+		if (isStart == 2){
+			ProfilerStop();
+			cout << "main_function end!" << endl;
+			isStart = 0;
+		}
     }
 }

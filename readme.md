@@ -178,18 +178,88 @@
 
 #### 性能测试
 
-以下为目前的一个小测试
+以下为一个小测试（客户端每隔50ms随机发送一条命令）
 
 ```sh
 //执行代码
 g++  server.cpp -o server -lpthread  -lprofiler
-./server #同时运行2-3个客户端
+./server #运行服务器
+g++  client.cpp -o client -lpthread -std=c++11
+./client #同时运行2-3个客户端
 pprof server result.prof --text #输出文本的统计结果
 ```
 
 运行代码后的统计结果
 
-![](imgs/test1.png)
+```
+Using local file server.
+Using local file result.prof.
+Total: 190 samples
+      81  42.6%  42.6%       81  42.6% __libc_send
+      57  30.0%  72.6%       57  30.0% __libc_recv
+       5   2.6%  75.3%        6   3.2% __GI___libc_malloc
+       4   2.1%  77.4%      190 100.0% start
+       3   1.6%  78.9%       13   6.8% std::__cxx11::basic_string::basic_string
+       2   1.1%  80.0%        2   1.1% __GI_strlen
+       2   1.1%  81.1%        2   1.1% __memcmp_sse4_1
+       2   1.1%  82.1%        2   1.1% __memcpy_avx_unaligned
+       2   1.1%  83.2%        2   1.1% _init
+       2   1.1%  84.2%        2   1.1% _int_free
+       2   1.1%  85.3%      119  62.6% parseCmdMsg
+       2   1.1%  86.3%        3   1.6% std::_Rb_tree_node::_M_valptr
+       2   1.1%  87.4%        2   1.1% std::__once_callable
+       2   1.1%  88.4%        5   2.6% std::less::operator
+       1   0.5%  88.9%        1   0.5% __memchr
+       1   0.5%  89.5%        1   0.5% _int_malloc
+       1   0.5%  90.0%        7   3.7% operator new
+       1   0.5%  90.5%        1   0.5% std::_Rb_tree::_M_begin
+       1   0.5%  91.1%        1   0.5% std::_Rb_tree::_M_end
+       1   0.5%  91.6%        4   2.1% std::_Rb_tree::_S_key
+       1   0.5%  92.1%        1   0.5% std::_Rb_tree::_S_left
+       1   0.5%  92.6%        3   1.6% std::_Rb_tree::_S_value
+       1   0.5%  93.2%        1   0.5% std::_Rb_tree_iterator::_Rb_tree_iterator
+       1   0.5%  93.7%        1   0.5% std::__addressof
+       1   0.5%  94.2%        2   1.1% std::__cxx11::basic_string::_M_assign
+       1   0.5%  94.7%        9   4.7% std::__cxx11::basic_string::_M_construct
+       1   0.5%  95.3%        1   0.5% std::__cxx11::basic_string::_M_create
+       1   0.5%  95.8%        2   1.1% std::__cxx11::basic_string::compare
+       1   0.5%  96.3%        1   0.5% std::__cxx11::basic_string::operator[]
+       1   0.5%  96.8%        1   0.5% std::__cxx11::basic_string::size
+       1   0.5%  97.4%        1   0.5% std::__cxx11::basic_string::~basic_string
+       1   0.5%  97.9%        1   0.5% std::allocator::~allocator
+       1   0.5%  98.4%        2   1.1% std::map::end
+       1   0.5%  98.9%        5   2.6% std::map::lower_bound
+       1   0.5%  99.5%        4   2.1% std::operator+
+       1   0.5% 100.0%        3   1.6% std::operator<
+       0   0.0% 100.0%        2   1.1% __GI___libc_free
+       0   0.0% 100.0%      190 100.0% __clone
+       0   0.0% 100.0%        4   2.1% createGroup
+       0   0.0% 100.0%       10   5.3% joinGroup
+       0   0.0% 100.0%        1   0.5% listSearch
+       0   0.0% 100.0%        5   2.6% quitGroup
+       0   0.0% 100.0%       21  11.1% sendGroupMsg
+       0   0.0% 100.0%       44  23.2% sendUserMsg
+       0   0.0% 100.0%      190 100.0% start_thread
+       0   0.0% 100.0%        9   4.7% std::_Rb_tree::_M_lower_bound
+       0   0.0% 100.0%        1   0.5% std::_Rb_tree::end
+       0   0.0% 100.0%        8   4.2% std::_Rb_tree::find
+       0   0.0% 100.0%        4   2.1% std::_Rb_tree::lower_bound
+       0   0.0% 100.0%        1   0.5% std::_Rb_tree_iterator::operator*
+       0   0.0% 100.0%        1   0.5% std::__cxx11::basic_string::_M_append
+       0   0.0% 100.0%        1   0.5% std::__cxx11::basic_string::_M_mutate
+       0   0.0% 100.0%        1   0.5% std::__cxx11::basic_string::find
+       0   0.0% 100.0%        2   1.1% std::__cxx11::basic_string::operator=
+       0   0.0% 100.0%        1   0.5% std::__cxx11::basic_string::reserve
+       0   0.0% 100.0%        2   1.1% std::__cxx11::basic_string::substr
+       0   0.0% 100.0%        1   0.5% std::char_traits::compare
+       0   0.0% 100.0%        8   4.2% std::map::find
+       0   0.0% 100.0%        6   3.2% std::map::operator[]
+       0   0.0% 100.0%        2   1.1% std::operator==
+       0   0.0% 100.0%       19  10.0% userLogin
+       0   0.0% 100.0%        5   2.6% userRegister
+```
+
+
 
 ### 更新记录
 

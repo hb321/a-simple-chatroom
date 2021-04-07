@@ -14,7 +14,8 @@
 #include <fstream>
 #include<vector>
 #include <time.h> 
-
+#include <unistd.h>
+#include <thread>
 using namespace std;
 
 
@@ -46,10 +47,19 @@ vector<string> readCmds(const string& filename){
 
 string getInput(const vector<string>& cmds){
 	srand((unsigned)time(NULL)+input_seed);
-	int idx = rand()%cmds.size();
+	int rand_num = rand();
+	int idx = rand_num%cmds.size();
+		
 	input_seed++;
-	sleep(1);
-	return cmds[idx];
+	this_thread::sleep_for(chrono::milliseconds(50));
+	//最后一个命令是退出，限制其出现的概率 
+	if (rand_num%5000==1){
+		return cmds[cmds.size()-1];
+	}
+	else if (idx == cmds.size()-1){
+		return cmds[0];
+	}
+	else	return cmds[idx];
 }
 
 void sigint(int signum)
@@ -291,7 +301,7 @@ int main()
 		string cmd, cmd_msg, err_msg;
 		cmd = getInput(cmds);
 		int ret = parseCmd(cmd, cmd_msg, err_msg);
-		if (input_seed > 600 || ret == 2){//向服务端发送消息后退出客户端 
+		if (input_seed > 10000 || ret == 2){//向服务端发送消息后退出客户端 
 			cmd_msg = "1 q";
 			send(sockfd, cmd_msg.c_str(), cmd_msg.size()+1, 0);
 			close(sockfd);
